@@ -1,0 +1,1 @@
+We can make the cores configurable on the ui
