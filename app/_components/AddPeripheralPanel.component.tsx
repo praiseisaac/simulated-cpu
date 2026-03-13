@@ -15,7 +15,7 @@ import { getPeripheralColor } from "@/app/_utils/peripheralColors";
 // ─── Types ──────────────────────────────────────────────────────────────────
 
 /** Supported peripheral type identifiers. */
-type PeripheralType = "button" | "timer" | "sensor" | "proximity" | "screen";
+type PeripheralType = "button" | "timer" | "sensor" | "proximity" | "screen" | "potentiometer" | "led";
 
 /** Form field values kept as strings for controlled inputs. */
 interface FormState {
@@ -29,6 +29,14 @@ interface FormState {
   gridWidth: string;      // screen-only
   gridHeight: string;     // screen-only
   sourceAddress: string;  // screen-only
+  maxResistance: string;  // potentiometer-only
+  ledColor: string;       // led-only (create-time only)
+  ledSourceAddress: string; // led-only
+  ledThreshold: string;   // led-only
+  ledLowCurrentMa: string; // led-only
+  ledHighCurrentMa: string; // led-only
+  ledMaxCurrentMa: string; // led-only
+  ledGamma: string; // led-only
 }
 
 const DEFAULT_FORM: FormState = {
@@ -42,6 +50,14 @@ const DEFAULT_FORM: FormState = {
   gridWidth: "32",
   gridHeight: "8",
   sourceAddress: "0038",
+  maxResistance: "100",
+  ledColor: "#ef4444",
+  ledSourceAddress: "003A",
+  ledThreshold: "128",
+  ledLowCurrentMa: "1",
+  ledHighCurrentMa: "18",
+  ledMaxCurrentMa: "20",
+  ledGamma: "1.2",
 };
 
 // ─── Presets ────────────────────────────────────────────────────────────────
@@ -52,7 +68,9 @@ const HANDLER_BASE: Record<PeripheralType, number> = {
   timer:     0x0090,
   sensor:    0x00A0,
   proximity: 0x00B0,
+  potentiometer: 0x00C0,
   screen:    0x0000, // screen doesn't fire interrupts — no handler needed
+  led:       0x0000, // LED is output-only and does not fire interrupts
 };
 
 /** Default field values that pre-populate for each type. */
@@ -61,13 +79,34 @@ const PRESETS: Record<PeripheralType, Partial<FormState>> = {
   timer:     { name: "System Timer",  handlerAddress: "0090", priority: "2", interval: "10" },
   sensor:    { name: "Temp Sensor",   handlerAddress: "00A0", priority: "3", threshold: "75" },
   proximity: { name: "Prox Sensor",   handlerAddress: "00B0", priority: "1", radius: "100" },
+  potentiometer: { name: "Potentiometer", handlerAddress: "00C0", priority: "2", maxResistance: "100" },
   screen:    { name: "Screen 32×8",   handlerAddress: "0000", priority: "0", gridWidth: "32", gridHeight: "8", sourceAddress: "0038" },
+  led:       {
+    name: "LED",
+    handlerAddress: "0000",
+    priority: "0",
+    ledColor: "#ef4444",
+    ledSourceAddress: "003A",
+    ledThreshold: "128",
+    ledLowCurrentMa: "1",
+    ledHighCurrentMa: "18",
+    ledMaxCurrentMa: "20",
+    ledGamma: "1.2",
+  },
 };
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
 /** Per-type counter so each new peripheral of the same type gets a unique handler address. */
-const typeCounts: Record<PeripheralType, number> = { button: 0, timer: 0, sensor: 0, proximity: 0, screen: 0 };
+const typeCounts: Record<PeripheralType, number> = {
+  button: 0,
+  timer: 0,
+  sensor: 0,
+  proximity: 0,
+  screen: 0,
+  potentiometer: 0,
+  led: 0,
+};
 let idCounter = 0;
 /** Generate a unique ID for a new peripheral. */
 function nextId(type: PeripheralType): string {
@@ -108,13 +147,13 @@ export function AddPeripheralPanel() {
 
   function handleSubmit() {
     const handlerAddress = parseInt(form.handlerAddress, 16);
-    if (isNaN(handlerAddress) && form.peripheralType !== "screen") return;
+    if (isNaN(handlerAddress) && form.peripheralType !== "screen" && form.peripheralType !== "led") return;
 
     addPeripheral({
       peripheralType: form.peripheralType,
       id: nextId(form.peripheralType),
       name: form.name || PRESETS[form.peripheralType].name || form.peripheralType,
-      handlerAddress: form.peripheralType === "screen" ? 0 : handlerAddress,
+      handlerAddress: form.peripheralType === "screen" || form.peripheralType === "led" ? 0 : handlerAddress,
       priority: parseInt(form.priority) || 0,
       ...(form.peripheralType === "timer" && {
         interval: parseInt(form.interval) || 10,
@@ -129,6 +168,18 @@ export function AddPeripheralPanel() {
         gridWidth: parseInt(form.gridWidth) || 32,
         gridHeight: parseInt(form.gridHeight) || 8,
         sourceAddress: parseInt(form.sourceAddress, 16) || 0x0038,
+      }),
+      ...(form.peripheralType === "potentiometer" && {
+        maxResistance: parseInt(form.maxResistance) || 100,
+      }),
+      ...(form.peripheralType === "led" && {
+        color: form.ledColor || "#ef4444",
+        sourceAddress: parseInt(form.ledSourceAddress, 16) || 0x003A,
+        outputThreshold: parseInt(form.ledThreshold) || 128,
+        lowCurrentMa: parseFloat(form.ledLowCurrentMa) || 1,
+        highCurrentMa: parseFloat(form.ledHighCurrentMa) || 18,
+        maxCurrentMa: parseFloat(form.ledMaxCurrentMa) || 20,
+        gamma: parseFloat(form.ledGamma) || 1.2,
       }),
     });
 
@@ -154,7 +205,7 @@ export function AddPeripheralPanel() {
         <div className="px-3 pb-3 space-y-3">
           {/* ── Type selector ─────────────────────────────────────── */}
           <div className="flex gap-1 flex-wrap">
-            {(["button", "timer", "sensor", "proximity", "screen"] as PeripheralType[]).map((t) => (
+            {(["button", "timer", "sensor", "proximity", "potentiometer", "screen", "led"] as PeripheralType[]).map((t) => (
               <button
                 key={t}
                 onClick={() => applyPreset(t)}
@@ -178,7 +229,7 @@ export function AddPeripheralPanel() {
               onChange={(e) => setForm({ ...form, name: e.target.value })}
             />
             <div className="flex gap-1.5">
-              {form.peripheralType !== "screen" && (
+              {form.peripheralType !== "screen" && form.peripheralType !== "led" && (
                 <input
                   className={inputClass}
                   placeholder="Handler (hex)"
@@ -242,6 +293,20 @@ export function AddPeripheralPanel() {
               />
             )}
 
+            {/* Potentiometer-specific */}
+            {form.peripheralType === "potentiometer" && (
+              <input
+                className={inputClass}
+                placeholder="Max resistance"
+                type="number"
+                min={1}
+                value={form.maxResistance}
+                onChange={(e) =>
+                  setForm({ ...form, maxResistance: e.target.value })
+                }
+              />
+            )}
+
             {/* Screen-specific */}
             {form.peripheralType === "screen" && (
               <>
@@ -277,6 +342,90 @@ export function AddPeripheralPanel() {
                     setForm({ ...form, sourceAddress: e.target.value })
                   }
                 />
+              </>
+            )}
+
+            {/* LED-specific */}
+            {form.peripheralType === "led" && (
+              <>
+                <div className="flex items-center gap-2 rounded-md border border-zinc-200 bg-zinc-50 px-2 py-1.5">
+                  <label className="text-[11px] text-zinc-600">Color</label>
+                  <input
+                    type="color"
+                    value={form.ledColor}
+                    onChange={(e) => setForm({ ...form, ledColor: e.target.value })}
+                    className="h-6 w-10 cursor-pointer rounded border border-zinc-200 bg-white"
+                  />
+                  <span className="text-[10px] font-mono text-zinc-500 uppercase">{form.ledColor}</span>
+                </div>
+                <input
+                  className={inputClass}
+                  placeholder="Source addr (hex)"
+                  value={form.ledSourceAddress}
+                  onChange={(e) =>
+                    setForm({ ...form, ledSourceAddress: e.target.value })
+                  }
+                />
+                <input
+                  className={inputClass}
+                  placeholder="Output threshold (0-255)"
+                  type="number"
+                  min={0}
+                  max={255}
+                  value={form.ledThreshold}
+                  onChange={(e) =>
+                    setForm({ ...form, ledThreshold: e.target.value })
+                  }
+                />
+                <div className="grid grid-cols-2 gap-1.5">
+                  <input
+                    className={inputClass}
+                    placeholder="Low current (mA)"
+                    type="number"
+                    min={0}
+                    step={0.1}
+                    value={form.ledLowCurrentMa}
+                    onChange={(e) =>
+                      setForm({ ...form, ledLowCurrentMa: e.target.value })
+                    }
+                  />
+                  <input
+                    className={inputClass}
+                    placeholder="High current (mA)"
+                    type="number"
+                    min={0}
+                    step={0.1}
+                    value={form.ledHighCurrentMa}
+                    onChange={(e) =>
+                      setForm({ ...form, ledHighCurrentMa: e.target.value })
+                    }
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-1.5">
+                  <input
+                    className={inputClass}
+                    placeholder="Max current (mA)"
+                    type="number"
+                    min={0.1}
+                    step={0.1}
+                    value={form.ledMaxCurrentMa}
+                    onChange={(e) =>
+                      setForm({ ...form, ledMaxCurrentMa: e.target.value })
+                    }
+                  />
+                  <input
+                    className={inputClass}
+                    placeholder="Gamma"
+                    type="number"
+                    min={0.1}
+                    max={3}
+                    step={0.1}
+                    value={form.ledGamma}
+                    onChange={(e) =>
+                      setForm({ ...form, ledGamma: e.target.value })
+                    }
+                  />
+                </div>
               </>
             )}
           </div>

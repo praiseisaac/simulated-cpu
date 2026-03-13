@@ -59,7 +59,7 @@ interface SimulationActions {
   triggerPeripheral: (id: string) => void;
   loadProgram: (startAddress: number, bytes: number[]) => void;
   addPeripheral: (opts: {
-    peripheralType: "button" | "timer" | "sensor" | "proximity" | "screen";
+    peripheralType: "button" | "timer" | "sensor" | "proximity" | "screen" | "potentiometer" | "led";
     id: string;
     name: string;
     handlerAddress: number;
@@ -70,6 +70,14 @@ interface SimulationActions {
     gridWidth?: number;
     gridHeight?: number;
     sourceAddress?: number;
+    maxResistance?: number;
+    color?: string;
+    registerAddress?: number;
+    outputThreshold?: number;
+    lowCurrentMa?: number;
+    highCurrentMa?: number;
+    maxCurrentMa?: number;
+    gamma?: number;
   }) => void;
   removePeripheral: (id: string) => void;
   updatePeripheral: (id: string, updates: Record<string, unknown>) => void;
@@ -287,7 +295,7 @@ export function SimulationProvider({ children }: { children: ReactNode }) {
 
   const addPeripheral = useCallback(
     (opts: {
-      peripheralType: "button" | "timer" | "sensor" | "proximity" | "screen";
+      peripheralType: "button" | "timer" | "sensor" | "proximity" | "screen" | "potentiometer" | "led";
       id: string;
       name: string;
       handlerAddress: number;
@@ -298,6 +306,14 @@ export function SimulationProvider({ children }: { children: ReactNode }) {
       gridWidth?: number;
       gridHeight?: number;
       sourceAddress?: number;
+      maxResistance?: number;
+      color?: string;
+      registerAddress?: number;
+      outputThreshold?: number;
+      lowCurrentMa?: number;
+      highCurrentMa?: number;
+      maxCurrentMa?: number;
+      gamma?: number;
     }) => {
       send({ type: "registerPeripheral", ...opts });
     },
