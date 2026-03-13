@@ -7,7 +7,7 @@
  * a scheduler-type dropdown, and a stats row.
  */
 
-import { useSimulation } from "@/app/visualizer/_modules/SimulationProvider.module";
+import { useSimulation } from "@/app/_modules/SimulationProvider.module";
 
 // ─── Button Helper ──────────────────────────────────────────────────────────
 

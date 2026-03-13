@@ -45,10 +45,10 @@ The CPU should have 2 cores. Meaning, it can only have two running processes/job
 The clock cycle will be 1 second
 
 **Files:**
-app/visualizer/page.tsx (page)
-app/visualizer/_components/*.component.tsx (glob for all components that will be needed focused on UI rather than interactivity) 
-app/visualizer/_modules/*.modules.tsx (these are similar to components, but have internal managed state and have effects beyond visualizing the data)
-app/visualizer/styles.module.css (styling)
+app/page.tsx (page)
+app/_components/*.component.tsx (glob for all components that will be needed focused on UI rather than interactivity) 
+app/_modules/*.modules.tsx (these are similar to components, but have internal managed state and have effects beyond visualizing the data)
+app/styles.module.css (styling)
 services/cpu/CPU.service.ts
 
 peripherals/*.peripheral.ts

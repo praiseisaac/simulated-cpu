@@ -7,10 +7,10 @@ Create a reusable custom React Flow node for peripherals. Each peripheral instan
 - Step 2 complete (WS server manages peripherals, provider streams state)
 
 ## File to Create
-`app/visualizer/_components/PeripheralNode.component.tsx`
+`app/_components/PeripheralNode.component.tsx`
 
 ## File to Update
-`app/visualizer/page.tsx` — register the node type; add peripheral nodes dynamically based on WS state
+`app/page.tsx` — register the node type; add peripheral nodes dynamically based on WS state
 
 ## Data Consumed (per peripheral, from WS broadcast)
 ```ts

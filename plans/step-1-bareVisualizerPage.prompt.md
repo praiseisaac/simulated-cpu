@@ -9,7 +9,7 @@ npm install @xyflow/react
 ```
 
 ## File to Create
-`app/visualizer/page.tsx`
+`app/page.tsx`
 
 ## Requirements
 - `"use client"` directive (React Flow needs client-side rendering)

@@ -27,7 +27,7 @@ A React context provider that:
 - Stores latest `ClockEvent` in state, re-renders consumers on each message
 - Provides `useSimulation()` hook for child components
 
-**File:** `app/visualizer/_modules/SimulationProvider.module.tsx`
+**File:** `app/_modules/SimulationProvider.module.tsx`
 
 ---
 

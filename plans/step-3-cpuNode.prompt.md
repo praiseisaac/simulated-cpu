@@ -7,10 +7,10 @@ Replace the placeholder "CPU" default node with a custom React Flow node that di
 - Step 2 complete (SimulationProvider + WebSocket server running)
 
 ## File to Create
-`app/visualizer/_components/CPUNode.component.tsx`
+`app/_components/CPUNode.component.tsx`
 
 ## File to Update
-`app/visualizer/page.tsx` — register the custom node type and swap the placeholder
+`app/page.tsx` — register the custom node type and swap the placeholder
 
 ## Data Consumed (from `ClockEvent`)
 ```ts

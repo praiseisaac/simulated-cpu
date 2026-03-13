@@ -10,12 +10,12 @@
  */
 
 import { useEffect, useRef, useState, useMemo } from "react";
-import { useSimulation } from "@/app/visualizer/_modules/SimulationProvider.module";
+import { useSimulation } from "@/app/_modules/SimulationProvider.module";
 import {
   getPeripheralColor,
   matchPeripheralByPC,
   type PeripheralColor,
-} from "@/app/visualizer/_utils/peripheralColors";
+} from "@/app/_utils/peripheralColors";
 import type { CoreState, ProcessState } from "@/types/cpu.types";
 import type { PeripheralSnapshot } from "@/types/peripheral.types";
 

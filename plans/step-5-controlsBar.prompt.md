@@ -7,10 +7,10 @@ Create a floating toolbar that lets the user control the simulation — start, s
 - Step 2 complete (SimulationProvider actions available)
 
 ## File to Create
-`app/visualizer/_components/ControlsBar.component.tsx`
+`app/_components/ControlsBar.component.tsx`
 
 ## File to Update
-`app/visualizer/page.tsx` — render ControlsBar inside the ReactFlow wrapper (as a Panel or absolute-positioned overlay)
+`app/page.tsx` — render ControlsBar inside the ReactFlow wrapper (as a Panel or absolute-positioned overlay)
 
 ## Actions (sent over WebSocket)
 | Button | Command sent | Description |

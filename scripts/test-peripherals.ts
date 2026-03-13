@@ -8,6 +8,8 @@ import { PeripheralManager } from "@/services/PeripheralManager.service";
 import ButtonPeripheral from "@/peripherals/Button.peripheral";
 import TimerPeripheral from "@/peripherals/Timer.peripheral";
 import { SensorPeripheral } from "@/peripherals/Sensor.peripheral";
+import { PotentiometerPeripheral } from "@/peripherals/Potentiometer.peripheral";
+import { LEDPeripheral } from "@/peripherals/LED.peripheral";
 import { PeripheralStatus } from "@/types/peripheral.types";
 
 function header(title: string) {
@@ -159,9 +161,60 @@ assert(sensor.getThreshold() === 200, "threshold changed to 200");
 
 sensor.disconnect();
 
-// ─── 8. PeripheralManager — registry ────────────────────────────────────────
+// ─── 8. Potentiometer Peripheral ───────────────────────────────────────────
 
-header("8. PeripheralManager — register, connect, tickAll");
+header("8. Potentiometer — value change debounce + normalization");
+
+const potMem = new MemoryService();
+const pot = new PotentiometerPeripheral("pot1", "Dial", 0x320, 100, 2, potMem, 0x003A, 2);
+
+pot.connect();
+pot.setResistance(50);
+
+assert(pot.tick() === null, "tick 1 after value change → debounced");
+const potInt = pot.tick();
+assert(potInt !== null, "tick 2 after value change → interrupt");
+assert(potInt!.source === "pot1", "potentiometer interrupt source");
+assert(potInt!.handlerAddress === 0x320, "potentiometer handler address");
+assert(potMem.read(0x003A) === 128, "normalized 50/100 mapped to 128 in register");
+
+pot.setResistance(50);
+assert(pot.tick() === null, "same value does not queue new interrupt");
+
+pot.setMaxResistance(200);
+pot.setResistance(100);
+pot.tick();
+assert(pot.tick() !== null, "new value after max change still fires with debounce");
+assert(pot.getNormalizedValue() === 128, "normalized remains half-scale at 100/200");
+
+pot.disconnect();
+
+// ─── 9. LED Peripheral ─────────────────────────────────────────────────────
+
+header("9. LED — memory-driven output without interrupts");
+
+const ledMem = new MemoryService();
+ledMem.write(0x003A, 200);
+const led = new LEDPeripheral("led1", "Status LED", 0, "#22c55e", ledMem, 0x003A);
+
+led.connect();
+const ledInt = led.tick();
+assert(ledInt === null, "LED tick never emits interrupts");
+assert(led.getCurrentMa() > 10, "LED enters high-current state on high output entry");
+assert(led.getBrightness() > 180, "LED brightness rises with high current");
+
+ledMem.write(0x003A, 20);
+led.tick();
+assert(led.getCurrentMa() < 5, "LED enters low-current state on low output entry");
+assert(led.getBrightness() < 80, "LED brightness drops with low current");
+
+assert((led.toJSON().meta.color as string) === "#22c55e", "LED snapshot keeps create-time color");
+
+led.disconnect();
+
+// ─── 10. PeripheralManager — registry ───────────────────────────────────────
+
+header("10. PeripheralManager — register, connect, tickAll");
 
 const mgr = new PeripheralManager();
 const b = new ButtonPeripheral("btn-a", "Button A", 0x100, 0);
@@ -198,9 +251,9 @@ let dupCaught = false;
 try { mgr.register(t); } catch { dupCaught = true; }
 assert(dupCaught, "duplicate register throws");
 
-// ─── 9. PeripheralManager — events ─────────────────────────────────────────
+// ─── 11. PeripheralManager — events ────────────────────────────────────────
 
-header("9. PeripheralManager — event listener");
+header("11. PeripheralManager — event listener");
 
 const mgr2 = new PeripheralManager();
 const events: string[] = [];
@@ -220,9 +273,9 @@ assert(events[2] === "triggered", "event 3: triggered");
 assert(events[3] === "disconnected", "event 4: disconnected");
 assert(events[4] === "unregistered", "event 5: unregistered");
 
-// ─── 10. PeripheralManager — toJSON ─────────────────────────────────────────
+// ─── 12. PeripheralManager — toJSON ────────────────────────────────────────
 
-header("10. PeripheralManager — toJSON");
+header("12. PeripheralManager — toJSON");
 
 const mgr3 = new PeripheralManager();
 mgr3.register(new ButtonPeripheral("snap-btn", "Snap Button", 0x100, 0));
@@ -232,9 +285,9 @@ assert(snapshots.length === 2, "toJSON returns 2 snapshots");
 assert(snapshots[0].id === "snap-btn", "first snapshot is button");
 assert(snapshots[1].id === "snap-tmr", "second snapshot is timer");
 
-// ─── 11. CPU + Peripheral Integration ───────────────────────────────────────
+// ─── 13. CPU + Peripheral Integration ──────────────────────────────────────
 
-header("11. CPU + Peripheral — button interrupt dispatched via tick");
+header("13. CPU + Peripheral — button interrupt dispatched via tick");
 
 /**
  * Main program at 0x000: LOAD R0, 0x080 (=42), then infinite JMP loop

@@ -10,8 +10,8 @@
 
 import { useCallback, useRef, type PointerEvent as ReactPointerEvent } from "react";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
-import { useSimulation } from "@/app/visualizer/_modules/SimulationProvider.module";
-import { getPeripheralColor } from "@/app/visualizer/_utils/peripheralColors";
+import { useSimulation } from "@/app/_modules/SimulationProvider.module";
+import { getPeripheralColor } from "@/app/_utils/peripheralColors";
 import type { PeripheralSnapshot } from "@/types/peripheral.types";
 
 // ─── Debounced Update Hook ──────────────────────────────────────────────────

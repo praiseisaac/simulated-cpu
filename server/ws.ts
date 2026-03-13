@@ -16,6 +16,8 @@ import TimerPeripheral from "@/peripherals/Timer.peripheral";
 import { SensorPeripheral } from "@/peripherals/Sensor.peripheral";
 import { ProximitySensorPeripheral } from "@/peripherals/ProximitySensor.peripheral";
 import { ScreenPeripheral } from "@/peripherals/Screen.peripheral";
+import { PotentiometerPeripheral } from "@/peripherals/Potentiometer.peripheral";
+import { LEDPeripheral } from "@/peripherals/LED.peripheral";
 import type { ClockEvent, CoreState, ProcessState } from "@/types/cpu.types";
 import type { PeripheralSnapshot, Peripheral } from "@/types/peripheral.types";
 import type { MemoryAccessEvent } from "@/types/memory.types";
@@ -70,6 +72,7 @@ const DATA_ADDRS: Record<string, number> = {
   sensor:    0x003E,
   button:    0x003F,
   proximity: 0x0039,
+  potentiometer: 0x003B,
 };
 
 /** Build a 20-byte ISR that increments the counter at `dataAddr`. */
@@ -138,6 +141,41 @@ function createPeripheral(msg: IncomingMessage): Peripheral {
       const sourceAddress = (msg.sourceAddress as number) ?? 0x0038;
       return new ScreenPeripheral(
         id, name, handlerAddress, width, height, sourceAddress, memory,
+      );
+    }
+    case "potentiometer": {
+      const maxResistance = (msg.maxResistance as number) ?? 100;
+      const registerAddress = (msg.registerAddress as number) ?? 0x003A;
+      return new PotentiometerPeripheral(
+        id,
+        name,
+        handlerAddress,
+        maxResistance,
+        priority,
+        memory,
+        registerAddress,
+      );
+    }
+    case "led": {
+      const color = (msg.color as string) ?? "#ef4444";
+      const sourceAddress = (msg.sourceAddress as number) ?? 0x003A;
+      const outputThreshold = (msg.outputThreshold as number) ?? 128;
+      const lowCurrentMa = (msg.lowCurrentMa as number) ?? 1;
+      const highCurrentMa = (msg.highCurrentMa as number) ?? 18;
+      const maxCurrentMa = (msg.maxCurrentMa as number) ?? 20;
+      const gamma = (msg.gamma as number) ?? 1.2;
+      return new LEDPeripheral(
+        id,
+        name,
+        0,
+        color,
+        memory,
+        sourceAddress,
+        outputThreshold,
+        lowCurrentMa,
+        highCurrentMa,
+        maxCurrentMa,
+        gamma,
       );
     }
     default:
@@ -392,6 +430,36 @@ function handleMessage(ws: WebSocket, raw: string): void {
           }
           if (updates.clear === true) {
             peripheral.clearScreen();
+          }
+        } else if (peripheral instanceof PotentiometerPeripheral) {
+          if (typeof updates.maxResistance === "number") {
+            peripheral.setMaxResistance(updates.maxResistance);
+          }
+          if (typeof updates.currentResistance === "number") {
+            peripheral.setResistance(updates.currentResistance);
+          }
+        } else if (peripheral instanceof LEDPeripheral) {
+          if (typeof updates.sourceAddress === "number") {
+            peripheral.setSourceAddress(updates.sourceAddress);
+          }
+          if (typeof updates.outputThreshold === "number") {
+            peripheral.setOutputThreshold(updates.outputThreshold);
+          }
+          if (typeof updates.lowCurrentMa === "number" || typeof updates.highCurrentMa === "number") {
+            const currentMeta = peripheral.toJSON().meta;
+            const lowCurrent = typeof updates.lowCurrentMa === "number"
+              ? updates.lowCurrentMa
+              : (currentMeta.lowCurrentMa as number);
+            const highCurrent = typeof updates.highCurrentMa === "number"
+              ? updates.highCurrentMa
+              : (currentMeta.highCurrentMa as number);
+            peripheral.setCurrentProfile(lowCurrent, highCurrent);
+          }
+          if (typeof updates.maxCurrentMa === "number") {
+            peripheral.setMaxCurrent(updates.maxCurrentMa);
+          }
+          if (typeof updates.gamma === "number") {
+            peripheral.setGamma(updates.gamma);
           }
         }
 

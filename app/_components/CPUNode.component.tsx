@@ -9,7 +9,7 @@
  */
 
 import { Handle, Position, type NodeProps } from "@xyflow/react";
-import { useSimulation } from "@/app/visualizer/_modules/SimulationProvider.module";
+import { useSimulation } from "@/app/_modules/SimulationProvider.module";
 import type { CoreState } from "@/types/cpu.types";
 
 // ─── Hex Helpers ────────────────────────────────────────────────────────────

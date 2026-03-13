@@ -13,7 +13,7 @@
 
 import { useMemo, type PointerEvent as ReactPointerEvent } from "react";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
-import { useSimulation } from "@/app/visualizer/_modules/SimulationProvider.module";
+import { useSimulation } from "@/app/_modules/SimulationProvider.module";
 import type { PeripheralSnapshot } from "@/types/peripheral.types";
 
 // ─── Default palette (matches Screen.peripheral.ts) ─────────────────────────

@@ -7,7 +7,7 @@ Compose all custom nodes and edges into the final canvas layout. Connect CPU ↔
 - Steps 3–6 complete (all custom nodes exist)
 
 ## File to Update
-`app/visualizer/page.tsx` — major rewrite to wire everything together
+`app/page.tsx` — major rewrite to wire everything together
 
 ## Node Layout
 ```

@@ -16,6 +16,8 @@ import { PersistenceService } from "@/services/Persistence.service";
 import { Opcode } from "@/types/cpu.types";
 import Button from "@/peripherals/Button.peripheral";
 import Timer from "@/peripherals/Timer.peripheral";
+import { PotentiometerPeripheral } from "@/peripherals/Potentiometer.peripheral";
+import { LEDPeripheral } from "@/peripherals/LED.peripheral";
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -314,24 +316,43 @@ try {
 
   const btn = new Button("btn-1", "Button 1", 0x0400, 1);
   const tmr = new Timer("tmr-1", "Timer 1", 0x0500, 10, 2);
+  const pot = new PotentiometerPeripheral("pot-1", "Dial 1", 0x0600, 200, 2, mem, 0x003A, 2);
+  const led = new LEDPeripheral("led-1", "LED 1", 0, "#22c55e", mem, 0x003A);
 
   cpu.registerPeripheral(btn);
   cpu.registerPeripheral(tmr);
+  cpu.registerPeripheral(pot);
+  cpu.registerPeripheral(led);
   cpu.connectPeripheral("btn-1");
   cpu.connectPeripheral("tmr-1");
+  cpu.connectPeripheral("pot-1");
+  cpu.connectPeripheral("led-1");
+
+  pot.setResistance(100);
+  mem.write(0x003A, 180);
+  cpu.step();
+  cpu.step();
 
   PersistenceService.save(cpu, savePath8);
   const loaded = PersistenceService.load(savePath8);
 
-  assert(loaded.peripherals.length === 2, `2 peripheral snapshots (got ${loaded.peripherals.length})`);
+  assert(loaded.peripherals.length === 4, `4 peripheral snapshots (got ${loaded.peripherals.length})`);
 
   const btnSnap = loaded.peripherals.find((p) => p.id === "btn-1");
   const tmrSnap = loaded.peripherals.find((p) => p.id === "tmr-1");
+  const potSnap = loaded.peripherals.find((p) => p.id === "pot-1");
+  const ledSnap = loaded.peripherals.find((p) => p.id === "led-1");
 
   assert(btnSnap !== undefined, "button snapshot found");
   assert(tmrSnap !== undefined, "timer snapshot found");
+  assert(potSnap !== undefined, "potentiometer snapshot found");
+  assert(ledSnap !== undefined, "LED snapshot found");
   assert(btnSnap?.status === "IDLE", `button status is IDLE (got ${btnSnap?.status})`);
   assert(tmrSnap?.priority === 2, `timer priority is 2 (got ${tmrSnap?.priority})`);
+  assert(potSnap?.meta.type === "potentiometer", `potentiometer meta.type saved (got ${potSnap?.meta.type})`);
+  assert((potSnap?.meta.normalizedValue as number) === 128, `potentiometer normalized value saved (got ${potSnap?.meta.normalizedValue})`);
+  assert(ledSnap?.meta.type === "led", `LED meta.type saved (got ${ledSnap?.meta.type})`);
+  assert((ledSnap?.meta.color as string) === "#22c55e", `LED color saved (got ${ledSnap?.meta.color})`);
 } finally {
   cleanup(savePath8);
 }

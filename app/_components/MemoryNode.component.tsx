@@ -8,7 +8,7 @@
  */
 
 import { Handle, Position, type NodeProps } from "@xyflow/react";
-import { useSimulation } from "@/app/visualizer/_modules/SimulationProvider.module";
+import { useSimulation } from "@/app/_modules/SimulationProvider.module";
 import type { MemoryAccessEvent } from "@/types/memory.types";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────

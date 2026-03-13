@@ -8,10 +8,10 @@ Replace the placeholder "Memory" default node with a custom React Flow node that
 - Step 3 complete (CPU node exists to connect to)
 
 ## File to Create
-`app/visualizer/_components/MemoryNode.component.tsx`
+`app/_components/MemoryNode.component.tsx`
 
 ## File to Update
-`app/visualizer/page.tsx` — register the custom node type
+`app/page.tsx` — register the custom node type
 
 ## Data Consumed
 The WebSocket server will need to include memory data in its broadcast. Extend the WS message to include:
