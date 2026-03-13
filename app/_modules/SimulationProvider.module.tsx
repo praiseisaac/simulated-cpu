@@ -73,11 +73,7 @@ interface SimulationActions {
     maxResistance?: number;
     color?: string;
     registerAddress?: number;
-    outputThreshold?: number;
-    lowCurrentMa?: number;
-    highCurrentMa?: number;
-    maxCurrentMa?: number;
-    gamma?: number;
+    initialLevel?: "LOW" | "HIGH";
   }) => void;
   removePeripheral: (id: string) => void;
   updatePeripheral: (id: string, updates: Record<string, unknown>) => void;
@@ -309,11 +305,7 @@ export function SimulationProvider({ children }: { children: ReactNode }) {
       maxResistance?: number;
       color?: string;
       registerAddress?: number;
-      outputThreshold?: number;
-      lowCurrentMa?: number;
-      highCurrentMa?: number;
-      maxCurrentMa?: number;
-      gamma?: number;
+      initialLevel?: "LOW" | "HIGH";
     }) => {
       send({ type: "registerPeripheral", ...opts });
     },

@@ -2,8 +2,7 @@
  * @module LEDPeripheral
  *
  * Output peripheral that samples a memory-mapped byte each tick and maps it
- * to LOW/HIGH current states, then computes perceptual brightness from the
- * flowing current.
+ * to LOW/HIGH current states.
  *
  * This peripheral never emits interrupts.
  */
@@ -27,17 +26,7 @@ export class LEDPeripheral implements Peripheral {
   private sourceAddress: number;
   private color: string;
   private outputEntry: number;
-
-  /** Memory values >= threshold are treated as HIGH output state. */
-  private outputThreshold: number;
-  /** Simulated LED current in mA for LOW/HIGH digital output states. */
-  private lowCurrentMa: number;
-  private highCurrentMa: number;
-  /** Current at which LED is considered full-brightness. */
-  private maxCurrentMa: number;
-  /** Gamma for perceptual brightness response. */
-  private gamma: number;
-
+  private level: "LOW" | "HIGH";
   private currentMa: number;
   private brightness: number;
 
@@ -48,11 +37,7 @@ export class LEDPeripheral implements Peripheral {
     color: string = "#ef4444",
     memory: MemoryService,
     sourceAddress: number = 0x003A,
-    outputThreshold: number = 128,
-    lowCurrentMa: number = 1,
-    highCurrentMa: number = 18,
-    maxCurrentMa: number = 20,
-    gamma: number = 1.2,
+    initialLevel: "LOW" | "HIGH" = "LOW",
   ) {
     this.id = id;
     this.name = name;
@@ -64,13 +49,9 @@ export class LEDPeripheral implements Peripheral {
     this.memory = memory;
     this.sourceAddress = sourceAddress;
     this.outputEntry = 0;
-    this.outputThreshold = this.clampByte(outputThreshold);
-    this.lowCurrentMa = Math.max(0, lowCurrentMa);
-    this.highCurrentMa = Math.max(this.lowCurrentMa, highCurrentMa);
-    this.maxCurrentMa = Math.max(0.001, maxCurrentMa);
-    this.gamma = Math.max(0.1, gamma);
-    this.currentMa = 0;
-    this.brightness = 0;
+    this.level = initialLevel;
+    this.currentMa = initialLevel === "HIGH" ? 18 : 0;
+    this.brightness = initialLevel === "HIGH" ? 255 : 0;
   }
 
   connect(): void {
@@ -87,23 +68,6 @@ export class LEDPeripheral implements Peripheral {
     this.sourceAddress = address;
   }
 
-  setOutputThreshold(value: number): void {
-    this.outputThreshold = this.clampByte(value);
-  }
-
-  setCurrentProfile(lowCurrentMa: number, highCurrentMa: number): void {
-    this.lowCurrentMa = Math.max(0, lowCurrentMa);
-    this.highCurrentMa = Math.max(this.lowCurrentMa, highCurrentMa);
-  }
-
-  setMaxCurrent(maxCurrentMa: number): void {
-    this.maxCurrentMa = Math.max(0.001, maxCurrentMa);
-  }
-
-  setGamma(gamma: number): void {
-    this.gamma = Math.max(0.1, gamma);
-  }
-
   getBrightness(): number {
     return this.brightness;
   }
@@ -115,8 +79,9 @@ export class LEDPeripheral implements Peripheral {
   trigger(): void {
     // Manual trigger emulates a HIGH digital output pulse.
     this.outputEntry = 0xff;
-    this.currentMa = this.highCurrentMa;
-    this.brightness = this.currentToBrightness(this.currentMa);
+    this.level = "HIGH";
+    this.currentMa = 18;
+    this.brightness = 255;
   }
 
   tick(): Interrupt | null {
@@ -125,9 +90,10 @@ export class LEDPeripheral implements Peripheral {
     this.status = PeripheralStatus.ACTIVE;
     this.outputEntry = this.memory.read(this.sourceAddress);
 
-    const isHigh = this.outputEntry >= this.outputThreshold;
-    this.currentMa = isHigh ? this.highCurrentMa : this.lowCurrentMa;
-    this.brightness = this.currentToBrightness(this.currentMa);
+    const isHigh = this.outputEntry >= 128;
+    this.level = isHigh ? "HIGH" : "LOW";
+    this.currentMa = isHigh ? 18 : 0;
+    this.brightness = isHigh ? 255 : 0;
 
     this.status = PeripheralStatus.IDLE;
 
@@ -145,25 +111,11 @@ export class LEDPeripheral implements Peripheral {
         type: "led",
         color: this.color,
         outputEntry: this.outputEntry,
-        outputThreshold: this.outputThreshold,
-        lowCurrentMa: this.lowCurrentMa,
-        highCurrentMa: this.highCurrentMa,
-        maxCurrentMa: this.maxCurrentMa,
-        gamma: this.gamma,
+        level: this.level,
         currentMa: this.currentMa,
         brightness: this.brightness,
         sourceAddress: this.sourceAddress,
       },
     };
-  }
-
-  private clampByte(value: number): number {
-    return Math.max(0, Math.min(255, Math.round(value)));
-  }
-
-  private currentToBrightness(currentMa: number): number {
-    const normalized = Math.max(0, Math.min(1, currentMa / this.maxCurrentMa));
-    const perceptual = Math.pow(normalized, this.gamma);
-    return Math.round(perceptual * 255);
   }
 }

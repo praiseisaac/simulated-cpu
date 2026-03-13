@@ -159,11 +159,7 @@ function createPeripheral(msg: IncomingMessage): Peripheral {
     case "led": {
       const color = (msg.color as string) ?? "#ef4444";
       const sourceAddress = (msg.sourceAddress as number) ?? 0x003A;
-      const outputThreshold = (msg.outputThreshold as number) ?? 128;
-      const lowCurrentMa = (msg.lowCurrentMa as number) ?? 1;
-      const highCurrentMa = (msg.highCurrentMa as number) ?? 18;
-      const maxCurrentMa = (msg.maxCurrentMa as number) ?? 20;
-      const gamma = (msg.gamma as number) ?? 1.2;
+      const initialLevel = ((msg.initialLevel as string) ?? "LOW") === "HIGH" ? "HIGH" : "LOW";
       return new LEDPeripheral(
         id,
         name,
@@ -171,11 +167,7 @@ function createPeripheral(msg: IncomingMessage): Peripheral {
         color,
         memory,
         sourceAddress,
-        outputThreshold,
-        lowCurrentMa,
-        highCurrentMa,
-        maxCurrentMa,
-        gamma,
+        initialLevel,
       );
     }
     default:
@@ -441,25 +433,6 @@ function handleMessage(ws: WebSocket, raw: string): void {
         } else if (peripheral instanceof LEDPeripheral) {
           if (typeof updates.sourceAddress === "number") {
             peripheral.setSourceAddress(updates.sourceAddress);
-          }
-          if (typeof updates.outputThreshold === "number") {
-            peripheral.setOutputThreshold(updates.outputThreshold);
-          }
-          if (typeof updates.lowCurrentMa === "number" || typeof updates.highCurrentMa === "number") {
-            const currentMeta = peripheral.toJSON().meta;
-            const lowCurrent = typeof updates.lowCurrentMa === "number"
-              ? updates.lowCurrentMa
-              : (currentMeta.lowCurrentMa as number);
-            const highCurrent = typeof updates.highCurrentMa === "number"
-              ? updates.highCurrentMa
-              : (currentMeta.highCurrentMa as number);
-            peripheral.setCurrentProfile(lowCurrent, highCurrent);
-          }
-          if (typeof updates.maxCurrentMa === "number") {
-            peripheral.setMaxCurrent(updates.maxCurrentMa);
-          }
-          if (typeof updates.gamma === "number") {
-            peripheral.setGamma(updates.gamma);
           }
         }
 
